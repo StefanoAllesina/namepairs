@@ -1,0 +1,63 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+## Sample code for:
+## *Last name analysis of mobility, gender imbalance, and nepotism across academic systems*
+## by Jacopo Grilli and Stefano Allesina, PNAS 2017
+
+## Data
+The data are stored in the `data` directory, which contains a file for each dataset:
+```{r}
+dir("../data")
+```
+
+To read a data file, use either `read.csv` or the much faster `read_csv` from `tidyverse`:
+```{r, message = FALSE}
+library(tidyverse)
+data <- read_csv("../data/ita_2000.csv")
+glimpse(data)
+```
+
+For each researcher, `last_id` is a numeric code corresponding the researcher's last name. All data sets contain the columns `last_id`, `institution_id`,`city_id`, `region`, and `sector`. The Italian data also contains `gender` and `rank`.
+
+## Randomizations
+The code to perform the randomizations illustrated in the article is contained in `run_randomizations.R`. The code requires the packages `data.table` and `tidyverse`. 
+
+To load the code:
+```{r, message = FALSE}
+source("run_randomizations.R")
+```
+
+To launch a randomization, invoke the function `randomize_compute_pval`. This function accepts three parameters:
+
+- `data_file`: the data to use
+
+- `randomization`: the type of randomization to perform. Possible choices are `"nation"`, `"city"`, and `"field"`.
+
+- `nrand`: the number of randomizations to perform (in the article, $10^6$---but for testing use a smaller number, as it might take a long time otherwise)
+
+For example, to randomize the `us_2016.csv` data by shuffling last names within each field, use:
+```{r, message = FALSE}
+us_2016_byfield <- randomize_compute_pval(data_file = "../data/us_2016.csv", 
+                                          randomization = "field", 
+                                          nrand = 5000)
+```
+
+The object `us_2016_byfield` is a list with containing two tables, `field` and `region`:
+```{r}
+us_2016_byfield$field
+us_2016_byfield$region
+```
+
+For each table, `totpairs` is the total number of isonymous pairs observed in the discipline or region, `mean` is the expected number of pairs in the randomized data, `sd` the standard deviation, and `pvalue` the probability of observing a number of pairs in the randomization that is larger or equal than that in the original data.
+
+To visualize the results, simply call 
+
+```{r}
+visualize_results(us_2016_byfield)
+```
+
+where saturated bars represent significant results once accounted for multiple hypothesis testing.
+
